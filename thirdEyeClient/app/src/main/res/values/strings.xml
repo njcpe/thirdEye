@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">stream</string>
+    <string name="offload_toggle">Offloading Enabled</string>
+</resources>

@@ -1,0 +1,13 @@
+package io.github.njohnsoncpe.thirdEyeClient.TCPClient;
+
+public enum TCPEventType{
+    CONNECTION_STARTED,
+    CONNECTION_ESTABLISHED,
+    CONNECTION_FAILED,
+    CONNECTION_LOST,
+    MESSAGE_RECEIVED,
+    DATA_RECEIVED,
+    EMPTY_PACKET,
+    MESSAGE_SENT,
+    DISCONNECTED
+}
