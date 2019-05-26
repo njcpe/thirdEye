@@ -3,7 +3,6 @@ package io.github.njohnsoncpe.thirdEyeClient;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.ReceiverCallNotAllowedException;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -12,9 +11,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
-import android.preference.PreferenceManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -26,16 +24,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.Switch;
-import android.widget.Toast;
 
-import net.majorkernelpanic.streaming.MediaStream;
-import net.majorkernelpanic.streaming.Session;
-import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.gl.SurfaceView;
 import net.majorkernelpanic.streaming.rtsp.RtspServer;
-import net.majorkernelpanic.streaming.video.VideoQuality;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,14 +39,11 @@ import java.util.Observer;
 import io.github.njohnsoncpe.thirdEyeClient.TCPClient.TCPClient;
 import io.github.njohnsoncpe.thirdEyeClient.TCPClient.TCPClientState;
 import io.github.njohnsoncpe.thirdEyeClient.TCPClient.TCPEvent;
-import org.opencv.*;
-import org.opencv.android.OpenCVLoader;
 
-public class MainActivity extends Activity implements SurfaceHolder.Callback, RtspServer.CallbackListener, Session.Callback, Observer{
+public class MainActivity extends Activity implements SurfaceHolder.Callback, Observer{
 
     private final static String TAG = "MainActivity";
     private SurfaceView mSurfaceView, boxesSurfaceView;
-    private Session mSession;
     private Paint boxPainter;
     private TextPaint labelPainter;
     private TCPClient client;
@@ -93,35 +81,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
            }
         });
 
-        Switch offloadToggle = findViewById(R.id.offload_toggle);
-        offloadToggle.setChecked(true);
-
-        offloadToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                if(isChecked){
-                    Toast.makeText(MainActivity.this, "Offloading Enabled", Toast.LENGTH_SHORT).show();
-
-
-                    if(client != null){
-                        client.connect();
-                    }
-
-
-                }else{
-                    Toast.makeText(MainActivity.this, "Offloading Disabled", Toast.LENGTH_SHORT).show();
-                    if(client != null){
-                        client.sendMessage("GOODBYE");
-                        client.disconnect();
-                        mSession.stop();
-                        mSession.release();
-                    }
-                }
-            }
-        });
-
-
-        offloadToggle = findViewById(R.id.offload_toggle);
         mSurfaceView = findViewById(R.id.surface);
         boxesSurfaceView = findViewById(R.id.boxDrawSurface);
 
@@ -160,17 +119,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
         client.addObserver(this);
         client.connect();
         // Configures the SessionBuilder
-        mSession = SessionBuilder.getInstance()
-                .setCallback(this)
-                .setSurfaceView(mSurfaceView)
-                .setPreviewOrientation(90)
-                .setContext(getApplicationContext())
-                .setAudioEncoder(SessionBuilder.AUDIO_NONE)
-                .setVideoEncoder(SessionBuilder.VIDEO_H264)
-                .setVideoQuality(new VideoQuality(640,480,10,5000))
-                .build();
-
-        mSession.getVideoTrack().setStreamingMethod(MediaStream.MODE_MEDIACODEC_API_2);
 
         mSurfaceView.getHolder().addCallback(this);
         mSurfaceView.setAspectRatioMode(net.majorkernelpanic.streaming.gl.SurfaceView.ASPECT_RATIO_PREVIEW);
@@ -181,8 +129,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
 
         // Starts the RTSP server
         getApplicationContext().startService(new Intent(getApplicationContext(), RtspServer.class));
-        mSession.startPreview(); //camera preview on phone surface
-        mSession.start();
 
     }
 
@@ -190,8 +136,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
     protected void onPause() {
         Log.e(TAG, "Application Paused");
         super.onPause();
-        mSession.stopPreview();
-        mSession.stop();
         getApplicationContext().stopService(new Intent(getApplicationContext(), RtspServer.class));
         if(client.getState() == TCPClientState.CONNECTED){
             client.sendMessage("GOODBYE");
@@ -214,50 +158,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
         super.onDestroy();
 
     }
-
-    //RTSP Session Handling Methods
-    @Override
-    public void onError(RtspServer server, Exception e, int error) {
-        Log.e("Server", e.toString());
-    }
-
-    @Override
-    public void onMessage(RtspServer server, int message) {
-        Log.e("Server", "unkown message");
-    }
-
-    @Override
-    public void onBitrateUpdate(long bitrate) {
-//`        Log.d(TAG, "RTSP Event: Bitrate Updated to " + bitrate);
-    }
-
-    @Override
-    public void onSessionError(int reason, int streamType, Exception e) {
-        Log.e(TAG, "RTSP Event: Session Error. Info: " + reason + " " + streamType);
-        e.printStackTrace();
-    }
-
-    @Override
-    public void onPreviewStarted() {
-        Log.e(TAG, "Preview Started");
-    }
-
-    @Override
-    public void onSessionConfigured() {
-        Log.e(TAG, "Session Configured");
-    }
-
-    @Override
-    public void onSessionStarted() {
-        client.sendMessage("READY");
-        Log.e(TAG, "Session Started");
-    }
-
-    @Override
-    public void onSessionStopped() {
-        Log.e(TAG, "Session Stopped");
-    }
-
 
     //SurfaceHolder Callback Methods
     @Override
@@ -324,7 +224,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback, Rt
                 break;
             case DISCONNECTED:
                 Log.e(TAG, "Client Disconnected");
-                mSession.release();
                 mSurfaceView.getHolder().removeCallback(this);
                 boxesSurfaceView.getHolder().removeCallback(this);
 

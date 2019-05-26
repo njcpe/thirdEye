@@ -130,7 +130,7 @@ if __name__ == '__main__':
     parser.add_argument('-nw', '--num-workers', dest='num_workers',
                         type=int, default=1, help='Number of workers.')
     parser.add_argument('-qs', '--queue-size', dest='queue_size',
-                        type=int, default=10, help='Size of the queue.')
+                        type=int, default=1, help='Size of the queue.')
     args = parser.parse_args()
 
     logger = multiprocessing.log_to_stderr()
